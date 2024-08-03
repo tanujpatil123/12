@@ -1,0 +1,66 @@
+<html>
+  <head>
+    <title>Completion AI</title>
+  </head>
+  <body>
+    <h1>Completion AI</h1>
+
+    <input type="text" id="promptInput" placeholder="Enter your prompt here...">
+    <button id="generateButton">Generate</button>
+    <input type="file" id="imageInput" accept="image/*">
+    <div id="conversation"></div> 
+
+    <script type="importmap">
+      {
+        "imports": {
+          "@google/generative-ai": "https://esm.run/@google/generative-ai"
+        }
+      }
+    </script>
+    <script type="module">
+      import { GoogleGenerativeAI } from "@google/generative-ai";
+
+      // Fetch your API_KEY
+      const API_KEY = "AIzaSyCJIjJeVIs1lK9GjbRBihEwD4AwpvMWGMk"; // Replace with your actual API key
+
+      const genAI = new GoogleGenerativeAI(API_KEY);
+
+      const promptInput = document.getElementById("promptInput");
+      const generateButton = document.getElementById("generateButton");
+      const imageInput = document.getElementById("imageInput");
+      const conversationDiv = document.getElementById("conversation");
+
+      async function fileToGenerativePart(file) {
+        const base64EncodedDataPromise = new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result.split(',')[1]);
+          reader.readAsDataURL(file);
+        });
+        return {
+          inlineData: { data: await base64EncodedDataPromise, mimeType: file.type },
+        };
+      }
+
+      generateButton.addEventListener("click", async () => {
+        const prompt = promptInput.value;
+        const imageParts = await Promise.all(
+          [...imageInput.files].map(fileToGenerativePart)
+        );
+
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); 
+
+        const result = await model.generateContent([prompt, ...imageParts]);
+        const response = await result.response;
+        const text = response.text();
+
+        // Display the conversation
+        conversationDiv.innerHTML += `<p><strong>You:</strong> ${prompt}</p><p><strong>AI:</strong> ${text}</p>`;
+        
+
+        // Clear input fields
+        promptInput.value = ""; 
+        imageInput.value = ""; 
+      });
+    </script>
+  </body>
+</html>
